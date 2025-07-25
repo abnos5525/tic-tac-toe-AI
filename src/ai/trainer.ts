@@ -17,6 +17,8 @@ const calculateWinner = (squares) => {
   return null;
 };
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const trainModel = async (
   model,
   episodes = 2000,
@@ -112,54 +114,59 @@ export const trainModel = async (
     return { winner: null, history: [] };
   };
 
-  // آموزش با بازی‌های شبیه‌سازی شده
-  for (let episode = 0; episode < episodes; episode++) {
-    const { winner, history } = simulateGame();
+   const BATCH_SIZE = 50; // تعداد بازی‌هایی که در هر دسته اجرا می‌شوند
+  for (let episode = 0; episode < episodes; episode += BATCH_SIZE) {
+    const batchEnd = Math.min(episode + BATCH_SIZE, episodes);
+    
+    for (let i = episode; i < batchEnd; i++) {
+      const { winner, history } = simulateGame();
 
-    // محاسبه پاداش برای هر حرکت
-    for (let i = 0; i < history.length; i++) {
-      const { board, move, player } = history[i];
-      const input = boardToInput(board);
+      // محاسبه پاداش برای هر حرکت
+      for (let j = 0; j < history.length; j++) {
+        const { board, move, player } = history[j];
+        const input = boardToInput(board);
 
-      try {
-        const currentOutput = model.run(input);
-        const target = [...currentOutput];
+        try {
+          const currentOutput = model.run(input);
+          const target = [...currentOutput];
 
-        // محاسبه پاداش
-        let reward = 0;
-        if (i === history.length - 1) {
-          // آخرین حرکت
-          if (player === "O") {
-            reward =
-              winner === "O"
-                ? winReward
-                : winner === "X"
-                ? loseReward
-                : drawReward;
+          // محاسبه پاداش
+          let reward = 0;
+          if (j === history.length - 1) {
+            // آخرین حرکت
+            if (player === "O") {
+              reward =
+                winner === "O"
+                  ? winReward
+                  : winner === "X"
+                  ? loseReward
+                  : drawReward;
+            }
+          } else {
+            reward = stepReward;
           }
-        } else {
-          reward = stepReward;
+
+          // تنظیم هدف برای حرکت انجام شده
+          target[move] = reward;
+
+          // آموزش مدل
+          model.train([{ input, output: target }], {
+            iterations: 1,
+            errorThresh: 0.001,
+            log: false,
+          });
+        } catch (e) {
+          console.error("Training error at episode", i, "step", j, e);
         }
-
-        // تنظیم هدف برای حرکت انجام شده
-        target[move] = reward;
-
-        // آموزش مدل
-        model.train([{ input, output: target }], {
-          iterations: 1,
-          errorThresh: 0.001,
-          log: false,
-        });
-      } catch (e) {
-        console.error("Training error at episode", episode, "step", i, e);
       }
     }
 
     // به‌روزرسانی پیشرفت
-    if (episode % 50 === 0) {
-      const progress = Math.round((episode / episodes) * 100);
-      updateProgress(progress);
-    }
+    const progress = Math.round((Math.min(episode + BATCH_SIZE, episodes) / episodes) * 100);
+    updateProgress(progress);
+
+    // اجازه دادن به مرورگر برای به‌روزرسانی UI
+    await delay(0); // یا await new Promise(resolve => setImmediate(resolve)); در محیط‌هایی که پشتیبانی می‌کنند
   }
 
   updateProgress(100);

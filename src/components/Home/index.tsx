@@ -3,21 +3,25 @@ import { createModel, saveModel, loadModel } from "../../ai/model";
 import TrainingProgress from "../TrainingProgress";
 import { trainModel } from "../../ai/trainer";
 
+type Board = (string | null)[];
+type TrainingStatus = "idle" | "training" | "completed";
+type AiLevel = "easy" | "medium" | "hard";
+
 const TicTacToeAI = () => {
   // حالت‌های بازی
-  const [board, setBoard] = useState(Array(9).fill(null));
-  const [isPlayerTurn, setIsPlayerTurn] = useState(true);
-  const [winner, setWinner] = useState(null);
-  const [isDraw, setIsDraw] = useState(false);
-  const [aiThinking, setAiThinking] = useState(false);
-  const [aiWins, setAiWins] = useState(0);
-  const [playerWins, setPlayerWins] = useState(0);
-  const [draws, setDraws] = useState(0);
-  const [showStats, setShowStats] = useState(false);
-  const [aiModel, setAiModel] = useState(null);
-  const [trainingStatus, setTrainingStatus] = useState("idle"); // idle, training, completed
-  const [trainingProgress, setTrainingProgress] = useState(0);
-  const [aiLevel, setAiLevel] = useState("medium"); // easy, medium, hard
+  const [board, setBoard] = useState<Board>(Array(9).fill(null));
+  const [isPlayerTurn, setIsPlayerTurn] = useState<boolean>(true);
+  const [winner, setWinner] = useState<string | null>(null);
+  const [isDraw, setIsDraw] = useState<boolean>(false);
+  const [aiThinking, setAiThinking] = useState<boolean>(false);
+  const [aiWins, setAiWins] = useState<number>(0);
+  const [playerWins, setPlayerWins] = useState<number>(0);
+  const [draws, setDraws] = useState<number>(0);
+  const [showStats, setShowStats] = useState<boolean>(false);
+  const [aiModel, setAiModel] = useState<any>(null);
+  const [trainingStatus, setTrainingStatus] = useState<TrainingStatus>("idle");
+  const [trainingProgress, setTrainingProgress] = useState<number>(0);
+  const [aiLevel, setAiLevel] = useState<AiLevel>("medium");
 
   // بارگذاری مدل از حافظه محلی
   useEffect(() => {
@@ -269,12 +273,7 @@ const TicTacToeAI = () => {
 
   // اثر برای حرکت هوش مصنوعی
   useEffect(() => {
-    if (
-      !isPlayerTurn &&
-      !winner &&
-      !isDraw &&
-      trainingStatus === "completed"
-    ) {
+    if (!isPlayerTurn && !winner && !isDraw && trainingStatus === "completed") {
       makeAIMove();
     }
   }, [isPlayerTurn, winner, isDraw, aiThinking, trainingStatus, makeAIMove]);
@@ -311,109 +310,123 @@ const TicTacToeAI = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* بخش بازی */}
+          {/* بخش بازی یا اسپینر آموزش */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-xl p-5">
-            <div className="flex justify-between items-center mb-5">
-              <div className="text-xl font-semibold text-gray-800">
-                {aiThinking ? (
-                  <span className="flex items-center text-purple-600">
-                    <span className="animate-pulse mr-2">⏳</span> هوش مصنوعی در
-                    حال فکر کردن...
-                  </span>
-                ) : trainingStatus === "training" ? (
-                  <span className="flex items-center text-indigo-600">
-                    <span className="animate-spin mr-2">🌀</span> در حال آموزش
-                    هوش مصنوعی...
-                  </span>
-                ) : winner ? (
-                  <span
-                    className={
-                      winner === "X" ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    {winner === "X"
-                      ? "🎉 شما برنده شدید!"
-                      : "🤖 هوش مصنوعی برنده شد!"}
-                  </span>
-                ) : isDraw ? (
-                  <span className="text-yellow-600">😐 بازی مساوی شد!</span>
-                ) : (
-                  <span
-                    className={
-                      isPlayerTurn ? "text-green-600" : "text-gray-500"
-                    }
-                  >
-                    {isPlayerTurn ? "نوبت شما (X)" : "نوبت هوش مصنوعی (O)"}
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={resetGame}
-                disabled={trainingStatus === "training"}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-              >
-                بازی جدید
-              </button>
-            </div>
-
-            {/* صفحه بازی */}
-            <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
-              {board.map((cell, index) => (
-                <button
-                  key={index}
-                  onClick={() => handlePlayerMove(index)}
-                  disabled={
-                    !isPlayerTurn ||
-                    winner ||
-                    isDraw ||
-                    aiThinking ||
-                    trainingStatus === "training" ||
-                    cell
-                  }
-                  className={`aspect-square w-full rounded-xl text-5xl font-bold flex items-center justify-center
-                    ${
-                      cell === "X"
-                        ? "bg-green-100 text-green-600 shadow-green"
-                        : cell === "O"
-                        ? "bg-red-100 text-red-600 shadow-red"
-                        : "bg-indigo-50 hover:bg-indigo-100"
-                    }
-                    ${
-                      !cell &&
-                      !winner &&
-                      !isDraw &&
-                      isPlayerTurn &&
-                      !aiThinking &&
-                      trainingStatus !== "training"
-                        ? "cursor-pointer hover:shadow-md"
-                        : "cursor-default"
-                    }
-                    transition-all duration-200 shadow-md`}
-                >
-                  {cell === "X" ? "X" : cell === "O" ? "O" : ""}
-                </button>
-              ))}
-            </div>
-
-            {/* آمار سریع */}
-            <div className="flex justify-center space-x-6">
-              <div className="text-center bg-green-50 p-3 rounded-xl w-24 shadow-sm">
-                <div className="text-2xl font-bold text-green-600">
-                  {playerWins}
+            {trainingStatus === "training" ? (
+              // نمایش اسپینر و پیام آموزش
+              <div className="flex flex-col items-center justify-center h-full py-12">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-600 mb-4"></div>
+                <p className="text-lg text-indigo-700 font-medium">
+                  هوش مصنوعی در حال آموزش اولیه است...
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  لطفاً صبر کنید. این فرآیند تنها یک‌بار انجام می‌شود.
+                </p>
+                <div className="w-full max-w-xs mt-4">
+                  <div className="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>پیشرفت</span>
+                    <span>{trainingProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${trainingProgress}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="text-sm text-green-800">برد شما</div>
               </div>
-              <div className="text-center bg-red-50 p-3 rounded-xl w-24 shadow-sm">
-                <div className="text-2xl font-bold text-red-600">{aiWins}</div>
-                <div className="text-sm text-red-800">برد AI</div>
-              </div>
-              <div className="text-center bg-yellow-50 p-3 rounded-xl w-24 shadow-sm">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {draws}
+            ) : (
+              // نمایش صفحه بازی و عناصر مربوطه وقتی آموزش تمام شده
+              <>
+                <div className="flex justify-between items-center mb-5">
+                  <div className="text-xl font-semibold text-gray-800">
+                    {aiThinking ? (
+                      <span className="flex items-center text-purple-600">
+                        <span className="animate-pulse mr-2">⏳</span> هوش
+                        مصنوعی در حال فکر کردن...
+                      </span>
+                    ) : winner ? (
+                      <span
+                        className={
+                          winner === "X" ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {winner === "X"
+                          ? "🎉 شما برنده شدید!"
+                          : "🤖 هوش مصنوعی برنده شد!"}
+                      </span>
+                    ) : isDraw ? (
+                      <span className="text-yellow-600">😐 بازی مساوی شد!</span>
+                    ) : (
+                      <span
+                        className={
+                          isPlayerTurn ? "text-green-600" : "text-gray-500"
+                        }
+                      >
+                        {isPlayerTurn ? "نوبت شما (X)" : "نوبت هوش مصنوعی (O)"}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={resetGame}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    بازی جدید
+                  </button>
                 </div>
-                <div className="text-sm text-yellow-800">مساوی</div>
-              </div>
-            </div>
+
+                {/* صفحه بازی */}
+                <div className="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6">
+                  {board.map((cell, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePlayerMove(index)}
+                      disabled={
+                        !isPlayerTurn || winner || isDraw || aiThinking || cell
+                      }
+                      className={`aspect-square w-full rounded-xl text-5xl font-bold flex items-center justify-center
+              ${
+                cell === "X"
+                  ? "bg-green-100 text-green-600 shadow-green"
+                  : cell === "O"
+                  ? "bg-red-100 text-red-600 shadow-red"
+                  : "bg-indigo-50 hover:bg-indigo-100"
+              }
+              ${
+                !cell && !winner && !isDraw && isPlayerTurn && !aiThinking
+                  ? "cursor-pointer hover:shadow-md"
+                  : "cursor-default"
+              }
+              transition-all duration-200 shadow-md`}
+                    >
+                      {cell === "X" ? "X" : cell === "O" ? "O" : ""}
+                    </button>
+                  ))}
+                </div>
+
+                {/* آمار سریع */}
+                <div className="flex justify-center space-x-6">
+                  <div className="text-center bg-green-50 p-3 rounded-xl w-24 shadow-sm">
+                    <div className="text-2xl font-bold text-green-600">
+                      {playerWins}
+                    </div>
+                    <div className="text-sm text-green-800">برد شما</div>
+                  </div>
+                  <div className="text-center bg-red-50 p-3 rounded-xl w-24 shadow-sm">
+                    <div className="text-2xl font-bold text-red-600">
+                      {aiWins}
+                    </div>
+                    <div className="text-sm text-red-800">برد AI</div>
+                  </div>
+                  <div className="text-center bg-yellow-50 p-3 rounded-xl w-24 shadow-sm">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {draws}
+                    </div>
+                    <div className="text-sm text-yellow-800">مساوی</div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* پنل کنترل و اطلاعات */}

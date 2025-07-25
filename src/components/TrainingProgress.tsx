@@ -1,4 +1,9 @@
-const TrainingProgress = ({ progress, status }) => {
+interface TrainingProgressProps {
+  progress: number;
+  status: 'idle' | 'training' | 'completed';
+}
+
+const TrainingProgress : React.FC<TrainingProgressProps> = ({ progress, status }) => {
   return (
     <div className="w-full">
       <div className="flex justify-between mb-1">
