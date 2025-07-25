@@ -29,8 +29,8 @@
 
 1.  **کلون کردن مخزن:**
     ```bash
-    git clone https://github.com/your-username/your-repo-name.git
-    cd your-repo-name
+    git clone https://github.com/abnos5525/tic-tac-toe-AI.git
+    cd tic-tac-toe-AI
     ```
     *(لطفاً `your-username` و `your-repo-name` را با اطلاعات مخزن خودتان جایگزین کنید.)*
 
