@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "WebWorker"],
+    "allowJs": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "noImplicitAny": false
+  }
+}
