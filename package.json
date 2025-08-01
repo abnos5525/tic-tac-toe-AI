@@ -1,9 +1,12 @@
 {
+  "homepage": "https://abnos5525.github.io/tic-tac-toe-AI",
   "name": "tic-tac-toe",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predeploy": "vite build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
